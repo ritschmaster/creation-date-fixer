@@ -16,10 +16,12 @@ m   Using the EXIF "Modification Date"
 o   Using the EXIF "Original Date"
 w   Using the filename of Whatsapp images
 d   Using the options -d and -t to define a date and time to use`)
-    .argument('<paths...>', 'Paths to convert')
+    .argument('<paths...>', 'Paths to convert. If a directory is given, then all files within that directory are converted (except for further sub directories).')
     .option('-m, --mode <mode>', `Mode to use. See the description for more information.`, 'c')
     .option('-d, --date <date>', `The date to use in the format YYYY-MM-DD (e.g. 2024-08-16).`, null)
     .option('-t, --time <time>', `The time to use in the format HHH:MM:SS (e.g. 13:14:15).`, null)
+    .option('-u, --test', `Run the application only in test mode. The conversion to be done will be printed.`)
+    .option('-r, --recursive', `If a directory is passed in, then it is read recursively (i.e. sub directories are considered too). Be very careful if you use this option as all files are considered to be images!`)
     .action((paths, options) => {
         const fixer = new Fixer();
         switch (options.mode) {
@@ -50,10 +52,16 @@ d   Using the options -d and -t to define a date and time to use`)
                     .set_mode(Fixer.Modes.DIRECT)
         }
 
+        if (options.test)
+            fixer.set_test_mode(true)
+
+        if (options.recursive)
+            fixer.set_recursive(true)
+
         try {
             fixer
                 .set_paths(paths)
-                .fix_image()
+                .fix()
         } catch (err) {
             //=================================================================
             // Output the error

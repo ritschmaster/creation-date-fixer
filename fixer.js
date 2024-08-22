@@ -1,5 +1,7 @@
-import { accessSync, constants } from 'node:fs';
+import { accessSync, readdirSync, constants } from 'node:fs';
 import { execSync } from 'node:child_process';
+
+import chalk from 'chalk';
 
 /**
   * @param {string} path Path to extract the creation date for. The path is expected to be existing.
@@ -127,6 +129,8 @@ export default class Fixer {
         this.mode = null
         this.date = null
         this.time = null
+        this.test_mode = false
+        this.recursive = false
     }
 
     set_paths(paths) {
@@ -173,7 +177,75 @@ export default class Fixer {
         return this.time
     }
 
-    fix_image() {
+    set_test_mode(test_mode) {
+        this.test_mode = test_mode
+        
+        return this
+    }
+
+    get_test_mode() {
+        return this.test_mode
+    }
+
+    set_recursive(recurisve) {
+        this.recursive = recurisve
+
+        return this
+    }
+
+    get_recursive() {
+        return this.recursive
+    }
+
+    fix_image(path) {
+        //=====================================================================
+        // Determine the variable date by using the variable mode
+        let date = ''
+        let mode = this.get_mode()
+        switch(mode) {
+            case Fixer.Modes.CREATE_DATE:
+                date = mode_create_date(path)
+                break
+
+            case Fixer.Modes.FACEBOOK:
+                date = mode_facebook(path)
+                break
+
+            case Fixer.Modes.MODIF_DATE:
+                date = mode_modif_date(path)
+                break
+
+            case Fixer.Modes.ORIGINAL:
+                date = mode_original(path)
+                break
+
+            case Fixer.Modes.WHATSAPP:
+                date = mode_whatsapp(path)
+                break
+
+            case Fixer.Modes.DIRECT:
+                date = mode_direct(path, this.get_date(), this.get_time())
+                break
+            
+            default:
+                throw Error('Mode ' + mode + ' not implemented' );
+        }
+
+        //=====================================================================
+        // Create the final command to modify the file
+        let modificationCommand = 'touch -t "' + date + '" "' + path + '"'
+
+        //=====================================================================
+        // Check if in test mode
+        // If yes: print the command to be executed
+        // If no: execute the command
+        if (this.get_test_mode())
+            console.log(chalk.green.bold(modificationCommand))
+        else
+            execSync(modificationCommand)
+    }
+
+    fix() {
         //=====================================================================
         // Get the paths
         let paths = this.get_paths();
@@ -183,8 +255,7 @@ export default class Fixer {
         if (!paths)
             throw Error('Paths not defined');
 
-        let date = ''
-        let mode = this.get_mode()
+        let recursive = this.get_recursive()
 
         paths.forEach(path => {
             //=================================================================
@@ -192,39 +263,31 @@ export default class Fixer {
             accessSync(path, constants.R_OK)
 
             //=================================================================
-            // Determine the variable date by using the variable mode
-            switch(mode) {
-                case Fixer.Modes.CREATE_DATE:
-                    date = mode_create_date(path)
-                    break
-
-                case Fixer.Modes.FACEBOOK:
-                    date = mode_facebook(path)
-                    break
-
-                case Fixer.Modes.MODIF_DATE:
-                    date = mode_modif_date(path)
-                    break
-
-                case Fixer.Modes.ORIGINAL:
-                    date = mode_original(path)
-                    break
-
-                case Fixer.Modes.WHATSAPP:
-                    date = mode_whatsapp(path)
-                    break
-
-                case Fixer.Modes.DIRECT:
-                    date = mode_direct(path, this.get_date(), this.get_time())
-                    break
-                
-                default:
-                    throw Error('Mode ' + mode + ' not implemented' );
+            // Check if the path is a directory
+            try {
+                //=============================================================
+                // Consume the directory entries
+                let dirEntries = readdirSync(path, {
+                    recursive: recursive
+                })
+                dirEntries.forEach(finalPath => {
+                    //=========================================================
+                    // Check if the final path is a directory again
+                    try {
+                        //=====================================================
+                        // Skip a directory
+                        readdirSync(finalPath)
+                    } catch {
+                        //=====================================================
+                        // Consume a file
+                        this.fix_image(finalPath)
+                    }
+                })
+            } catch (readddirError) {
+                //=============================================================
+                // Consume the path
+                this.fix_image(path)
             }
-
-            //=================================================================
-            // Use the date to modify the file
-            execSync('touch -t "' + date + '" "' + path + '"')
         });
     } 
 }
