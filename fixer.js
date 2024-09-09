@@ -270,9 +270,10 @@ export default class Fixer {
                 let dirEntries = readdirSync(path, {
                     recursive: recursive
                 })
-                dirEntries.forEach(finalPath => {
+                dirEntries.forEach(finalPathBasename => {
                     //=========================================================
                     // Check if the final path is a directory again
+                    const finalPath = path + '/' + finalPathBasename
                     try {
                         //=====================================================
                         // Skip a directory

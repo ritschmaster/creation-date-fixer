@@ -10,11 +10,11 @@ program
     .description(`Fixes the creation date attribute of an image file. This can be handy before importing into Apple Photos as that product is consuming the creation date attribute.
 
 The possible modes are:
-c   Using the EXIF "Creation Date"
-f   Using the filename of Facebook images
-m   Using the EXIF "Modification Date"
-o   Using the EXIF "Original Date"
-w   Using the filename of Whatsapp images
+c   Using the EXIF "Creation Date". This tag is normally used by cameras.
+f   Using the filename of Facebook images. Those filenames are containing a date in the format YYYY-MM-DD_HH-MM-SS.
+m   Using the EXIF "Modification Date". This tag is normally used by cameras.
+o   Using the EXIF "Original Date". This tag is normally used by cameras.
+w   Using the filename of Whatsapp images. Those filenames are containing a date in the format YYYYMMDD.
 d   Using the options -d and -t to define a date and time to use`)
     .argument('<paths...>', 'Paths to convert. If a directory is given, then all files within that directory are converted (except for further sub directories).')
     .option('-m, --mode <mode>', `Mode to use. See the description for more information.`, 'c')

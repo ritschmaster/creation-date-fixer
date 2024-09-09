@@ -34,9 +34,9 @@ Executing `creation-date-fixer -h` says it all:
 
 1. `git clone https://github.com/ritschmaster/creation-date-fixer`
 2. `cd creation-date-fixer`
-3. `npm link``
+3. `npm link`
 
 ## Uninstall
 
-1. `cd creation-date-fixer``
+1. `cd creation-date-fixer`
 2. `npm uninstall -g`
