@@ -1,118 +1,15 @@
 import { accessSync, readdirSync, constants } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { platform } from 'node:os';
 
 import chalk from 'chalk';
 
-/**
-  * @param {string} path Path to extract the creation date for. The path is expected to be existing.
-  * @returns {string} Creation date for touch
-  */
-const mode_create_date = (path)  => {
-    let creation_date = execSync('exiftool -\'CreateDate\' "' + path + '" | cut -d\' \' -f24')
-        .toString()
-        .replace('\n', '')
-    let creation_time = execSync('exiftool -\'CreateDate\' "' + path + '" | cut -d\' \' -f25')
-        .toString()
-        .replace('\n', '')
-
-    if (creation_date.length <= 0)
-        throw Error("Unable to get creation date from file " + path)
-
-    if (creation_time.length <= 0)
-        throw Error("Unable to get creation time from file " + path)
-
-    let date = execSync('date -jf "%Y:%m:%d%T" "' + creation_date + creation_time + '" +%Y%m%d%H%M.%S')
-        .toString()
-        .replace('\n', '')
-
-    return date    
-}
-
-const mode_facebook = (path) => {
-    let match = execSync('ls "' + path + '" | grep -o "[0-9]*" | head -n 1')
-        .toString()
-        .replace('\n', '')
-
-    if (match.length <= 0)
-        throw Error('File ' + path + ' does not fullfill the Facebook pattern')
-
-    let date = execSync('date -jf "%Y-%m-%d_%H-%M-%S" "' + match + '" +%Y%m%d%H%M.%S')
-        .toString()
-        .replace('\n', '')
-
-    return date    
-}
-
-const mode_whatsapp = (path) => {
-    let match = execSync('ls "' + path + '" | grep -o "[0-9]*" | head -n 1')
-        .toString()
-        .replace('\n', '')
-
-    if (match.length <= 0)
-        throw Error('File ' + path + ' does not fullfill the Whatsapp pattern')
-
-    let date = execSync('date -jf "%Y%m%d" "' + match + '" +%Y%m%d%H%M.%S')
-        .toString()
-        .replace('\n', '')
-
-    return date
-}
-
-const mode_original = (path) => {
-    let creation_date = execSync('exiftool -\'DateTimeOriginal\' "' + path + '" | cut -d\' \' -f17')
-        .toString()
-        .replace('\n', '')
-    let creation_time = execSync('exiftool -\'DateTimeOriginal\' "' + path + '" | cut -d\' \' -f18')
-        .toString()
-        .replace('\n', '')
-
-    if (creation_date.length <= 0)
-        throw Error("Unable to get creation date from file " + path)
-
-    if (creation_time.length <= 0)
-        throw Error("Unable to get creation time from file " + path)
-
-    let date = execSync('date -jf "%Y:%m:%d%T" "' + creation_date + creation_time + '" +%Y%m%d%H%M.%S')
-        .toString()
-        .replace('\n', '')
-
-    return date    
-}
-
-const mode_modif_date = (path) => {
-    let creation_date = execSync('exiftool -\'DateTimeOriginal\' "' + path + '" | grep \'File Modification Date/Time\' | cut -d\' \' -f9')
-        .toString()
-        .replace('\n', '')
-    let creation_time = execSync('exiftool -\'DateTimeOriginal\' "' + path + '" | grep \'File Modification Date/Time\' | cut -d\' \' -f10')
-        .toString()
-        .replace('\n', '')
-
-    if (creation_date.length <= 0)
-        throw Error("Unable to get creation date from file " + path)
-
-    if (creation_time.length <= 0)
-        throw Error("Unable to get creation time from file " + path)
-
-    let date = execSync('date -jf "%Y:%m:%d%T" "' + creation_date + creation_time + '" +%Y%m%d%H%M.%S')
-        .toString()
-        .replace('\n', '')
-
-    return date    
-}
-
-const mode_direct = (path, new_date, new_time) => {
-    if (!new_date)
-        throw Error("Date to use has not been set")
-
-    if (!new_time)
-        throw Error("Time to use has not been set")
-
-    let date = execSync('date -jf "%Y-%m-%d %H:%M:%S" "' + new_date + " " + new_time + '" +%Y%m%d%H%M.%S')
-        .toString()
-        .replace('\n', '')
-
-    return date    
-}
+import { mode_create_date } from './mode/create_date.js';
+import { mode_facebook } from './mode/facebook.js';
+import { mode_whatsapp } from './mode/whatsapp.js';
+import { mode_original } from './mode/original.js';
+import { mode_modif_date } from './mode/modif_date.js';
+import { mode_direct } from './direct.js';
 
 export default class Fixer {
     static Modes = Object.freeze({
@@ -122,7 +19,7 @@ export default class Fixer {
         ORIGINAL: 3,
         MODIF_DATE: 4,
         DIRECT: 5
-    })    
+    })
 
     constructor() {
         this.paths = null
@@ -133,12 +30,21 @@ export default class Fixer {
         this.recursive = false
     }
 
+    /**
+     * 
+     * @param {Array<string>} paths The paths to modify
+     * @returns 
+     */
     set_paths(paths) {
         this.paths = paths
 
         return this
     }
 
+    /**
+     * 
+     * @returns Array<string> The paths to modify
+     */
     get_paths() {
         return this.paths
     }
@@ -157,7 +63,7 @@ export default class Fixer {
         // TODO check if date
 
         this.date = date
-        
+
         return this
     }
 
@@ -169,7 +75,7 @@ export default class Fixer {
         // TODO check if time
 
         this.time = time
-        
+
         return this
     }
 
@@ -177,32 +83,69 @@ export default class Fixer {
         return this.time
     }
 
+    /**
+     * 
+     * @param {boolean} test_mode Enable/disable the test mode
+     * @returns This instance for chaining
+     */
     set_test_mode(test_mode) {
         this.test_mode = test_mode
-        
+
         return this
     }
 
+    /**
+     * 
+     * @returns boolean True if test mode is enabled, false otherwise
+     */
     get_test_mode() {
         return this.test_mode
     }
 
+    /**
+     * 
+     * @param {boolean} recurisve Enable/disable recursive reading of 
+     * directories
+     * @returns This instance for chaining
+     */
     set_recursive(recurisve) {
         this.recursive = recurisve
 
         return this
     }
 
+    /**
+     * 
+     * @returns boolean True if recursive reading of directories is enabled, 
+     * false otherwise
+     */
     get_recursive() {
         return this.recursive
     }
 
+    /**
+     * 
+     * @param {string} path The path to modify
+     * @param {Date} date The date to set
+     */
+    get_modification_command(path, date) {
+        return 'SetFile -d "' + 
+            date.toLocaleString('en-US') + 
+            '" "' + 
+            path + 
+            '"'
+    }
+
+    /**
+     * 
+     * @param {string} path The path to modify
+     */
     fix_image(path) {
         //=====================================================================
         // Determine the variable date by using the variable mode
         let date = ''
         let mode = this.get_mode()
-        switch(mode) {
+        switch (mode) {
             case Fixer.Modes.CREATE_DATE:
                 date = mode_create_date(path)
                 break
@@ -226,14 +169,14 @@ export default class Fixer {
             case Fixer.Modes.DIRECT:
                 date = mode_direct(path, this.get_date(), this.get_time())
                 break
-            
+
             default:
-                throw Error('Mode ' + mode + ' not implemented' );
+                throw Error('Mode ' + mode + ' not implemented');
         }
 
         //=====================================================================
         // Create the final command to modify the file
-        let modificationCommand = 'touch -t "' + date + '" "' + path + '"'
+        let modificationCommand = this.get_modification_command(path, date)
 
         //=====================================================================
         // Check if in test mode
@@ -290,5 +233,5 @@ export default class Fixer {
                 this.fix_image(path)
             }
         });
-    } 
+    }
 }

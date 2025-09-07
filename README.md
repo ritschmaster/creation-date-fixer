@@ -40,3 +40,11 @@ Executing `creation-date-fixer -h` says it all:
 
 1. `cd creation-date-fixer`
 2. `npm uninstall -g`
+
+## Dependencies
+
+This application currently supports macOS only.
+
+## Code
+
+The entire application is using ES Modules.
