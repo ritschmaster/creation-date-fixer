@@ -43,7 +43,10 @@ Executing `creation-date-fixer -h` says it all:
 
 ## Dependencies
 
-This application currently supports macOS only.
+This application currently supports macOS only. More platforms can be supported
+easily by adding the necessary code to update a file's creation date using the 
+platform's specific toolset and test it afterwards. If you are willing to test
+it on your platform then I am willing to implement it.
 
 ## Code
 

@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 /**
   * @param {string} path Path to extract the creation date for. The path is 
   * expected to be existing.
-  * @returns {string} Creation date for touch
+  * @returns {Date} The date to use as the creation date of the file.
   */
 export const mode_facebook = (path) => {
     let match = execSync('ls "' + path + '" | grep -o "[0-9]*" | head -n 1')

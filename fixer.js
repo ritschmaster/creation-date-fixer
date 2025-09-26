@@ -129,11 +129,23 @@ export default class Fixer {
      * @param {Date} date The date to set
      */
     get_modification_command(path, date) {
-        return 'SetFile -d "' + 
-            date.toLocaleString('en-US') + 
-            '" "' + 
-            path + 
-            '"'
+        let my_platform = platform()
+        if (my_platform === 'darwin') {
+            //=================================================================
+            // We are on macOS  
+            return 'SetFile -d "' + 
+                date.toLocaleString('en-US') + 
+                '" "' + 
+                path + 
+                '"'
+        } else {
+            //=================================================================
+            // We do not know the platform. Therefore, we throw an exception.
+            throw Error('You are running platform ' + my_platform + '.' + '\n' +
+                        'This platform is not supported yet.' + '\n' +
+                        'Supported platforms are: ' + '\n' + 
+                        '1. macOS (darwin)')
+        }
     }
 
     /**
